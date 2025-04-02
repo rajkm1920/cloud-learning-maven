@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class SendMessageToNH {
@@ -33,18 +34,21 @@ public class SendMessageToNH {
     public void sendNotificationWithSDK(String message){
 
         try {
-            NotificationHubClient notificationHubClient = new NotificationHub(NH_CONNECTION_STRING_SDK, NH_NAME);
+            //NotificationHubClient notificationHubClient = new NotificationHub(NH_CONNECTION_STRING_SDK, NH_NAME);
 
-            //notificationHubClient.createRegistration();
+            NotificationHub notificationHub = installationFcmv1Notification();
+
             if(regCount==0) {
-                System.err.println("Create Registration:\t" + createRegistration(notificationHubClient));
+                //System.err.println("Create Registration:\t" + createRegistration(notificationHubClient));
+                notificationHub = installationFcmv1Notification();
+                System.err.println("fcmv1 android-installation-id: ");
                 regCount++;
             }
-            Notification notification = new Notification();
-
-            notification.setBody(messageBody(message));
-            NotificationOutcome outcome = notificationHubClient.sendNotification(notification);
-            System.err.println("getTrackingId:\t "+outcome.getTrackingId());
+            NotificationOutcome outcome = sendFcmV1Notification(notificationHub);
+            System.err.println("GetTrackingId:\t "+outcome.getTrackingId());
+//            notification.setBody(messageBody(message));
+//            NotificationOutcome outcome = notificationHubClient.sendNotification(notification);
+//            System.err.println("getTrackingId:\t "+outcome.getTrackingId());
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -52,15 +56,37 @@ public class SendMessageToNH {
         }
     }
 
-    public String createRegistration( NotificationHubClient nHClient) throws NotificationHubsException {
-        try{
-            return nHClient.createRegistrationId();
-        }catch (Exception e){
-            System.err.println("Exception Cause :"+e.getCause()+"\t Exception Message: "+e.getMessage());
-            e.printStackTrace();
-            return e.getMessage();
-        }
+    public NotificationOutcome sendFcmV1Notification( NotificationHub notificationHub) throws NotificationHubsException {
+            NotificationOutcome outcome = notificationHub.sendNotification(new FcmV1Notification("{\"message\":{\"android\":{\"data\":{\"message\":\"Notification Hub test Fcmv1 notification\"}}}}"));
+            return outcome;
     }
+    public NotificationOutcome sendFcmNotification( NotificationHub notificationHub) throws NotificationHubsException {
+        NotificationOutcome outcome = notificationHub.sendNotification(new FcmNotification("{\"message\":{\"android\":{\"data\":{\"message\":\"Notification Hub test Fcmv1 notification\"}}}}"));
+        return outcome;
+    }
+
+//    @Scheduled(fixedRate = 5000 )
+    public String fetchMessage(){
+        System.err.println("\n\nDateTime:\t"+ LocalDateTime.now());
+        // String eventData = receiverService.receiveMessages();
+        String eventData = "Event Data for notification Hub";
+        sendNotificationWithSDK(eventData);
+        return eventData;
+    }
+
+
+    public NotificationHub installationFcmv1Notification(){
+        NotificationHub notificationHub = null;
+        try {
+            notificationHub = new NotificationHub(NH_CONNECTION_STRING_SDK, NH_NAME);
+            notificationHub.createOrUpdateInstallation(new Installation("ins-id-"+UUID.randomUUID(), NotificationPlatform.FcmV1, "device-token"));
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return notificationHub;
+    }
+
+
     public Map<String, String> setHeader(){
         Map<String, String> mapHeader = new HashMap<>();
         mapHeader.put("ServiceBusNotification-Format","First messeage to NotificationHub");
@@ -82,19 +108,10 @@ public class SendMessageToNH {
             e.printStackTrace();
             return e.getCause().getMessage();
         }
-
     }
 
 
 
-    @Scheduled(fixedRate = 5000 )
-    public String fetchMessage(){
-        System.err.println("\n\nDateTime:\t"+ LocalDateTime.now());
-        // String eventData = receiverService.receiveMessages();
-        String eventData = "Event Data for notification Hub";
-        sendNotificationWithSDK(eventData);
-        return eventData;
-    }
 
 
 
