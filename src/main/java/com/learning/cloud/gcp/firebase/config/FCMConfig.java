@@ -17,7 +17,7 @@ public class FCMConfig {
     public FirebaseOptions buildFirebaseOption() {
        FirebaseOptions options = null;
         try {
-            File configFile = ResourceUtils.getFile("classpath:fedexpushnotification.json");
+            File configFile = ResourceUtils.getFile("classpath:poc-fcm.json");
             FileInputStream serviceAccount = new FileInputStream(configFile);
              options = new FirebaseOptions.Builder()
                     .setCredentials(GoogleCredentials.fromStream(serviceAccount))
